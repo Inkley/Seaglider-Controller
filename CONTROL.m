@@ -8,7 +8,7 @@ err_theta   = theta_d-theta;
 
 %% Controller
 if t <= T   
-    Mc      = Kpp*err_theta + Kdp*err_thetadot;
+    Mc      = Kpq*err_theta + Kdq*err_thetadot;
 end
 
 % Desired control forces/torques
@@ -19,7 +19,8 @@ tauC.KD = 0;    % Desired roll moment (N-m)
 tauC.MD = Mc;   % Desired pitch moment
 tauC.ND = 0;    % Desired yaw moment 
 
-%% Controls
+%% Control Dynamics
+% Controls
 
 % Call Vehicle Dynamics
 [fuse_drag] = DRAG(u);

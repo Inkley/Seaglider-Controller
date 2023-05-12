@@ -13,7 +13,7 @@ clc; clear; close all;
         Another periodic action performed during *profile phases* (Dive,
         Apogee, Climb), occuring at intervals defined in science file and only
         done when neccessary 
-    • --> Add G&C functionality in the future
+    • --> Add G&C phase adjustments in the future
 %}
 
 %% Equilibrium Conditions: Pitch Control (Lecture 20), From MK
@@ -30,33 +30,33 @@ thetamax    = 25*pi/180;    % Max theta value (rad)
 Theta       = linspace(-thetamax,thetamax,n);
 
 %   Define Glider Parameters
-b       = 0.0191;           % Glider fuselage drag coefficient
-L       = 1.8;              % Glider length (m)
-Bmax    = 0.3;              % Max glider breadth (m)
-Bave    = 0.2;              % Average glider breadth (m)
-Lw      = (1-Bmax)/2;       % Wing span 
-cw      = 0.07;             % Average wing chord (m)
-AR      = Lw/cw;            % Wing Aspect Ratio
-Sw      = Lw*cw ;           % Wing wetted area
-m       = 55.783;           % GLider mass (kg), where does this value come from?
-                            % From manual: Nominal - 52 kg, Min - 50 kg,
-                            % Max - 54 kg
-                            % MK Calc. based off volume range of glider
+
+glider.b       = 0.0191;                % Glider fuselage drag coefficient
+glider.L       = 1.8;                   % Glider length (m)
+glider.Bmax    = 0.3;                   % Max glider breadth (m)
+glider.Bave    = 0.2;                   % Average glider breadth (m)
+glider.Lw      = (1-glider.Bmax)/2;     % Wing span 
+glider.cw      = 0.07;                  % Average wing chord (m)
+glider.AR      = glider.Lw/glider.cw;   % Wing Aspect Ratio
+glider.Sw      = glider.Lw*glider.cw ;  % Wing wetted area
+glider.m       = 55.783;                % GLider mass (kg), where does this value come from?
+                                            % From manual: Nominal - 52 kg, Min - 50 kg,
+                                            % Max - 54 kg
+                                            % MK Calc. based off volume range of glider
 
 Cd0     = 0.015;            % Coefficient of drag of wing at 0 angle of attack
 Cdc     = 1.2;              % Coefficient of drag of a cylinder in cross flow
-b       = 0.0191;
 
 %   Define operational parameters
 Delmax  = 55052*(1/100)^3;
 dDel    = Delmax *0.05;
 
 %   Run for loop to calculate equilibrium velocities at different angles
-c2      = b*L^2*(rho_s/2)^(3/4);
-c3      = Cd0*rho_s*Sw;
-c4      = 4*pi*AR/(AR+2)^2*rho_s*Sw;
-c6      = rho_s*L*Bave*Cdc/2;
-c7      = 2*pi*rho_s*AR/(AR+2)*Sw;
+c2      = glider.b*glider.L^2*(rho_s/2)^(3/4);
+c3      = Cd0*rho_s*glider.Sw;
+c4      = 4*pi*glider.AR/(glider.AR+2)^2*rho_s*glider.Sw;
+c6      = rho_s*glider.L*glider.Bave*Cdc/2;
+c7      = 2*pi*rho_s*glider.AR/(glider.AR+2)*glider.Sw;
 
 %   Pre-allocate
 u       = zeros;
@@ -76,9 +76,8 @@ for ii = 1:n
     else
         Del = Delmax-dDel;
     end
-    c1  = (rho_s*Del-m)*g;
-    c5  = (m-rho_s*Del)*g;
-    %C   = [c1,c2,c3,c4,c5,c6,c7];
+    c1  = (rho_s*Del-glider.m)*g;
+    c5  = (glider.m-rho_s*Del)*g;
     C   = [c1,c2,c3,c4,c5,c6,c7];
 
     %   Numerically solve for [u,v] pair that solves force balance eqn.
@@ -164,22 +163,32 @@ state.w     = 0;
 state.q     = 0;
 %state.r     = 0; 
 
+state_vec = [state.x state.y state.theta state.u state.w state.q];
+
+% Gains
+% gains.Kpq = ?;
+% gains.Kdq = ?;
+
+% Loop frequencies 
+%loop.cycleT = 3;                    % s
+%loop.fc     = 1/loop.cycleT;        % fc = 0.33 Hz 
+
 % Seaglider Properties
 x_f   = 6000; % Desired forward travel distance
 d_f   = 1000; % Glider cycle depth
 
-% d_batt;         % Horizontal position of battery assembly center of mass, relative to origin G_0
-% z_batt;         % Vertical position of center of mass
-% sigma_v;        % Bladder volume ratio
-% delta_PH;       % Pressure housing displacement 
-% d_b;            % Horizontal distance to bladder
-% sigma_m;        % Battery mass ratio
-% m_0;            % Glider Mass (minus battery assembly)
-% rho_oil;        % Oil density
-% p_aft;          % Battery pack position associated with pitch angle theta_climb
-% p_fore;         % Battery pack position associated with pitch angle theta_dive
-% theta_dive;     % Dive equilibrium condition
-% eta_1WP;        % Set of navigation waypoints (lat,lon)
+% glider.d_batt;         % Horizontal position of battery assembly center of mass, relative to origin G_0
+% glider.z_batt;         % Vertical position of center of mass
+% glider.sigma_v;        % Bladder volume ratio
+% glider.delta_PH;       % Pressure housing displacement 
+% glider.d_b;            % Horizontal distance to bladder
+% glider.sigma_m;        % Battery mass ratio
+% glider.m_0;            % Glider Mass (minus battery assembly)
+% glider.rho_oil;        % Oil density
+% glider.p_aft;          % Battery pack position associated with pitch angle theta_climb
+% glider.p_fore;         % Battery pack position associated with pitch angle theta_dive
+% glider.theta_dive;     % Dive equilibrium condition
+% glider.eta_1WP;        % Set of navigation waypoints (lat,lon)
 
 %% Control Cycle Hierarchy
 
@@ -216,6 +225,7 @@ d_f   = 1000; % Glider cycle depth
 %d_batt = tan(theta_climb)*z_batt - ((rho_s - rho_oil)*sigma_v*delta_PH*d_b)/(sigma_m*m_0);
 
 %% Glider Simulation
+% FROM TJI AUV_SIM.m CONTROLLER SUITE
 %[Etadot] = CONTROL(0,state_vec,gains,gyro,auv,params,d,loop);  % Debug fn. 
 %[T_OUT, Y_OUT] = ode45(@CONTROL, [0 loop.cycleT], state_vec, [], gains, gyro, auv, params, d, loop); 
 
