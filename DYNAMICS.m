@@ -22,6 +22,11 @@ fuse_drag = X_drag;
 
 % Define sum of hydrodynamic forces in each DOF
 
+% Buoyancy Forces
+Xbuoy = g*((rho_s*Delmax - m)*sin(theta));
+Zbuoy = g*((m-rho_s*Delmax)*cos(theta));
+Mbouy = g*(-zg*m*sin(theta)+xg*m*cos(theta));
+
 % Total forces
 X       = XHS + Xhyd + tauC.XD;
 Y       = YHS + Yhyd + tauC.YD;
