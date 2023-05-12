@@ -17,15 +17,19 @@ clc; clear; close all;
 %}
 
 %% Equilibrium Conditions: Pitch Control (Lecture 20), From MK
+%   Function to calculate glider velocities at different climb and dive pitch angles
 
-%%%% Function to calculate glider velocities at different climb and dive pitch angles
+%   Environmental Factors
+rho_s   = 1025;     % Seawater Density Average, kg/m^3
+g       = 9.81;     % Accelerate due to Gravity, m/s^2
 
-%%%% Define Parameter Space
+
+%   Define Parameter Space
 n           = 100;          % Number of points in theta range
 thetamax    = 25*pi/180;    % Max theta value (rad)
 Theta       = linspace(-thetamax,thetamax,n);
 
-%%%% Define Glider Parameters
+%   Define Glider Parameters
 b       = 0.0191;           % Glider fuselage drag coefficient
 L       = 1.8;              % Glider length (m)
 Bmax    = 0.3;              % Max glider breadth (m)
@@ -43,25 +47,25 @@ Cd0     = 0.015;            % Coefficient of drag of wing at 0 angle of attack
 Cdc     = 1.2;              % Coefficient of drag of a cylinder in cross flow
 b       = 0.0191;
 
-%%%% Define operational parameters
+%   Define operational parameters
 Delmax  = 55052*(1/100)^3;
 dDel    = Delmax *0.05;
 
-%%%% Run for loop to calculate equilibrium velocities at different angles
+%   Run for loop to calculate equilibrium velocities at different angles
 c2      = b*L^2*(rho_s/2)^(3/4);
 c3      = Cd0*rho_s*Sw;
 c4      = 4*pi*AR/(AR+2)^2*rho_s*Sw;
 c6      = rho_s*L*Bave*Cdc/2;
 c7      = 2*pi*rho_s*AR/(AR+2)*Sw;
 
-% Pre-allocate
+%   Pre-allocate
 u       = zeros;
 w       = u;
 alpha   = u;
 xdot    = u;
 zdot    = u;
 
-% Global Variables (try to find a better workaround!)
+%   Global Variables (try to find a better workaround!)
 global theta    %#ok<GVMIS>
 global C        %#ok<GVMIS>
 
@@ -77,7 +81,7 @@ for ii = 1:n
     %C   = [c1,c2,c3,c4,c5,c6,c7];
     C   = [c1,c2,c3,c4,c5,c6,c7];
 
-    %%%% Numerically solve for [u,v] pair that solves force balance eqn.
+    %   Numerically solve for [u,v] pair that solves force balance eqn.
     nuu     = [2;2];    % Upper bound for u,w
     nul     = [0,-2];   % Lower bound for u,w
     nu0     = [0,0];    % Initial guess
@@ -88,7 +92,7 @@ for ii = 1:n
     w(ii)   = nufit(2);
     alpha(ii) = atan2(w(ii),u(ii));
 
-    %%%% Solve for velocities in the inertial coordinate system
+    %   Solve for velocities in the inertial coordinate system
     J1 = [cos(theta),-sin(theta);sin(theta),cos(theta)];
     etadot = J1*nufit';
     xdot(ii) = etadot(1);
@@ -142,9 +146,7 @@ plot([-25 25],nu0, '--k','LineWidth',2)
     print(gcf,'-depsc','etaplot')
 
 %% Update Controller Simulation Suite
-    %% Inputs
-
-%%% ASSUMING NO TURNING DYNAMICS --> LONGITUDINAL VEHICLE DYNAMICS %%%
+%   ASSUMING NO TURNING DYNAMICS --> LONGITUDINAL VEHICLE DYNAMICS 
 
 % Inertial states (starting from rest at the surface)
 state.x     = 0;
@@ -161,10 +163,6 @@ state.w     = 0;
 %state.p     = 0;
 state.q     = 0;
 %state.r     = 0; 
-
-% Environmental Factors
-rho_s   = 1025;     % Seawater Density Average, kg/m^3
-g       = 9.81;     % Accelerate due to Gravity, m/s^2
 
 % Seaglider Properties
 x_f   = 6000; % Desired forward travel distance
