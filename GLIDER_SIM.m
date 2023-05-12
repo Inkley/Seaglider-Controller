@@ -6,90 +6,15 @@ clc; clear; close all;
 
 %% Working Notes
 %{
-    • ENGINE TORQUE MODELS - Lecture 15/16 Slide 19... someday
+    • Engine Torque Models - Lecture 15/16 Slide 19... someday
     • Glider Control: generate expected commands
     • Dynamic simulation vs. just equilibrium condition formulation
+    • G&C Phases: Pitch adjustment, Variable Bouyancy Device (VBD) adjustment, roll adjustment
+        Another periodic action performed during *profile phases* (Dive,
+        Apogee, Climb), occuring at intervals defined in science file and only
+        done when neccessary 
+    • --> Add G&C functionality in the future
 %}
-
-%% Inputs
-
-% Inertial states (starting from rest at the surface)
-state.x     = 0;
-state.y     = 0;
-%state.z     = 0;
-%state.phi   = 0;
-state.theta = 0;
-%state.psi   = 0;
-
-% Body-fixed states (starting from rest at the surface)
-state.u     = 0;
-%state.v     = 0;
-state.w     = 0;
-%state.p     = 0;
-state.q     = 0;
-%state.r     = 0; 
-
-% Environmental Factors
-rho_s   = 1025;     % Seawater Density Average, kg/m^3
-g       = 9.81;     % Accelerate due to Gravity, m/s^2
-
-% Seaglider Properties
-x_map   = 6000; % Desired forward travel distance
-y_map   = 1000; % Desired vertial travel distance
-
-% d_batt;         % Horizontal position of battery assembly center of mass, relative to origin G_0
-% z_batt;         % Vertical position of center of mass
-% sigma_v;        % Bladder volume ratio
-% delta_PH;       % Pressure housing displacement 
-% d_b;            % Horizontal distance to bladder
-% sigma_m;        % Battery mass ratio
-% m_0;            % Glider Mass (minus battery assembly)
-% rho_oil;        % Oil density
-% p_aft;          % Battery pack position associated with pitch angle theta_climb
-% p_fore;         % Battery pack position associated with pitch angle theta_dive
-% theta_dive;     % Dive equilibrium condition
-% eta_1WP;        % Set of navigation waypoints (lat,lon)
-% d_f;            % Glide cycle depth
-% x_f;            % Glide cycle forward travel distance
-
-%% Control Cycle Hierarchy
-
-%   G&C Phases: Pitch adjustment, Variable Bouyancy Device (VBD) adjustment, roll adjustment
-%       Another periodic action performed during *profile phases* (Dive,
-%       Apogee, Climb), occuring at intervals defined in science file and only
-%       done when neccessary 
-
-    %%%%%   SURFACE    %%%%%
-
-% 1) Start at surface, sample from GPS receiver to determine vehicle position
-
-% 2) Command first cage motor to drive battery pack to position p_fore
-
-% 3) Command buoyancy engine to pump all working fluid from external bladder to internal chamber. 
-
-    %%%%%   *DIVE*     %%%%%
-
-% 4) Every 5s sample external hydrostatic pressure, calculate current vehicle depth
-
-% 5) Update the remaining vehicle states utilizing a dead-reckoning scheme
-
-%d_batt = tan(theta_dive)*z_batt;
-
-    %%%%%   *APOGEE*   %%%%%
-
-% 6) Command buoyancy engine to pump all working fluid from internal chamber back into external bladder
-
-% 7) Command first cage motor to drive battery pack to position p_aft
-
-    %%%%%   *CLIMB*    %%%%%
-
-% 8) Sample pressure and update vehicle states in same technique that was used during dive phase
-
-% 9) Once vehicle reaches the surface, sample from  GPS receiver again and update all state values
-
-% 10) Repeat Cycle steps 1-9
-
-%d_batt = tan(theta_climb)*z_batt - ((rho_s - rho_oil)*sigma_v*delta_PH*d_b)/(sigma_m*m_0);
 
 %% Equilibrium Conditions: Pitch Control (Lecture 20), From MK
 
@@ -101,6 +26,7 @@ thetamax    = 25*pi/180;    % Max theta value (rad)
 Theta       = linspace(-thetamax,thetamax,n);
 
 %%%% Define Glider Parameters
+b       = 0.0191;           % Glider fuselage drag coefficient
 L       = 1.8;              % Glider length (m)
 Bmax    = 0.3;              % Max glider breadth (m)
 Bave    = 0.2;              % Average glider breadth (m)
@@ -169,25 +95,12 @@ for ii = 1:n
     zdot(ii) = etadot(2);
 end
 
-% Matlab program analyzes a range of glider pitch angles and determines the
-% pair of body velocity states [u,w] that solve the X and Z force balance
-% equations
-
 v_tot = sqrt(u.^2+w.^2);
 v_dot_tot = sqrt(xdot.^2 + zdot.^2);
 Theta_deg = Theta.*(180/pi);
 alpha_deg = alpha.*(180/pi);
 
-% Finally, the transformation matrix is calculated at each value of pitch
-% angle and used to transform body-fixed velocities to inertial velocites
-
-% Shows forward and vertical velocity as a function of pitch angle
-
-
 %% Results
-
-% Plot states as a function of time (what is our control cycle time...?)
-
 figure
 plot(Theta_deg,u,'LineWidth',2)   
 hold on
@@ -227,3 +140,85 @@ plot([-25 25],nu0, '--k','LineWidth',2)
     legend('$\dot{x}$','$\dot{z}$','$V_{tot}$','$\nu_0$','Interpreter','Latex')
     set(gca,'FontSize',12,'LineWidth',1.0)
     print(gcf,'-depsc','etaplot')
+
+%% Update Controller Simulation Suite
+    %% Inputs
+
+%%% ASSUMING NO TURNING DYNAMICS --> LONGITUDINAL VEHICLE DYNAMICS %%%
+
+% Inertial states (starting from rest at the surface)
+state.x     = 0;
+state.y     = 0;
+%state.z     = 0;
+%state.phi   = 0;
+state.theta = 0;
+%state.psi   = 0;
+
+% Body-fixed states (starting from rest at the surface)
+state.u     = 0;
+%state.v     = 0;
+state.w     = 0;
+%state.p     = 0;
+state.q     = 0;
+%state.r     = 0; 
+
+% Environmental Factors
+rho_s   = 1025;     % Seawater Density Average, kg/m^3
+g       = 9.81;     % Accelerate due to Gravity, m/s^2
+
+% Seaglider Properties
+x_f   = 6000; % Desired forward travel distance
+d_f   = 1000; % Glider cycle depth
+
+% d_batt;         % Horizontal position of battery assembly center of mass, relative to origin G_0
+% z_batt;         % Vertical position of center of mass
+% sigma_v;        % Bladder volume ratio
+% delta_PH;       % Pressure housing displacement 
+% d_b;            % Horizontal distance to bladder
+% sigma_m;        % Battery mass ratio
+% m_0;            % Glider Mass (minus battery assembly)
+% rho_oil;        % Oil density
+% p_aft;          % Battery pack position associated with pitch angle theta_climb
+% p_fore;         % Battery pack position associated with pitch angle theta_dive
+% theta_dive;     % Dive equilibrium condition
+% eta_1WP;        % Set of navigation waypoints (lat,lon)
+
+%% Control Cycle Hierarchy
+
+    %%%%%   SURFACE    %%%%%
+
+% 1) Start at surface, sample from GPS receiver to determine vehicle position
+
+% 2) Command first cage motor to drive battery pack to position p_fore
+
+% 3) Command buoyancy engine to pump all working fluid from external bladder to internal chamber. 
+
+    %%%%%   *DIVE*     %%%%%
+
+% 4) Every 5s sample external hydrostatic pressure, calculate current vehicle depth
+
+% 5) Update the remaining vehicle states utilizing a dead-reckoning scheme
+
+%d_batt = tan(theta_dive)*z_batt;
+
+    %%%%%   *APOGEE*   %%%%%
+
+% 6) Command buoyancy engine to pump all working fluid from internal chamber back into external bladder
+
+% 7) Command first cage motor to drive battery pack to position p_aft
+
+    %%%%%   *CLIMB*    %%%%%
+
+% 8) Sample pressure and update vehicle states in same technique that was used during dive phase
+
+% 9) Once vehicle reaches the surface, sample from  GPS receiver again and update all state values
+
+% 10) Repeat Cycle steps 1-9
+
+%d_batt = tan(theta_climb)*z_batt - ((rho_s - rho_oil)*sigma_v*delta_PH*d_b)/(sigma_m*m_0);
+
+%% Glider Simulation
+%[Etadot] = CONTROL(0,state_vec,gains,gyro,auv,params,d,loop);  % Debug fn. 
+%[T_OUT, Y_OUT] = ode45(@CONTROL, [0 loop.cycleT], state_vec, [], gains, gyro, auv, params, d, loop); 
+
+%% Results
