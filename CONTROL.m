@@ -2,9 +2,7 @@ function [output] = CONTROL(input)
 
 %% Variable pass-throughs
 
-
 %% Error
-
 err_theta   = theta_d-theta;
 %err_thetadot   = ?; 
 
