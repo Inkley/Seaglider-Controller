@@ -1,4 +1,4 @@
-function [fuse_drag] = DRAG(u)
+function [fuse_drag] = DYNAMICS(u)
     
 % • Hydrodynamic model: lift, drag, induced drag
 % • From Bennett et al. 2021
